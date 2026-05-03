@@ -1,62 +1,62 @@
-# .gitignore
-# ─────────────────────────────────────────────────────────────────────────────
-# Files that must NEVER be committed to git
-# ─────────────────────────────────────────────────────────────────────────────
+# # .gitignore
+# # ─────────────────────────────────────────────────────────────────────────────
+# # Files that must NEVER be committed to git
+# # ─────────────────────────────────────────────────────────────────────────────
 
-# ── SECRETS (most important) ──────────────────────────────────────────────────
-.env
-.env.local
-.env.production
-.env.staging
-*.key
-*.pem
-*.p12
-secrets/
+# # ── SECRETS (most important) ──────────────────────────────────────────────────
+# .env
+# .env.local
+# .env.production
+# .env.staging
+# *.key
+# *.pem
+# *.p12
+# secrets/
 
-# ── Python ────────────────────────────────────────────────────────────────────
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-venv/
-env/
-.venv/
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-htmlcov/
-.coverage
-coverage.xml
+# # ── Python ────────────────────────────────────────────────────────────────────
+# __pycache__/
+# *.py[cod]
+# *$py.class
+# *.so
+# .Python
+# venv/
+# env/
+# .venv/
+# *.egg-info/
+# dist/
+# build/
+# .pytest_cache/
+# .mypy_cache/
+# .ruff_cache/
+# htmlcov/
+# .coverage
+# coverage.xml
 
-# ── Node / Frontend ───────────────────────────────────────────────────────────
-node_modules/
-frontend/dist/
-frontend/.vite/
-*.log
-npm-debug.log*
+# # ── Node / Frontend ───────────────────────────────────────────────────────────
+# node_modules/
+# frontend/dist/
+# frontend/.vite/
+# *.log
+# npm-debug.log*
 
-# ── IDE ───────────────────────────────────────────────────────────────────────
-.vscode/
-.idea/
-*.swp
-*.swo
-.DS_Store
-Thumbs.db
+# # ── IDE ───────────────────────────────────────────────────────────────────────
+# .vscode/
+# .idea/
+# *.swp
+# *.swo
+# .DS_Store
+# Thumbs.db
 
-# ── Docker ────────────────────────────────────────────────────────────────────
-# Keep docker-compose.yml but ignore override files with secrets
-docker-compose.override.yml
-docker-compose.prod.yml
+# # ── Docker ────────────────────────────────────────────────────────────────────
+# # Keep docker-compose.yml but ignore override files with secrets
+# docker-compose.override.yml
+# docker-compose.prod.yml
 
-# ── Database dumps ────────────────────────────────────────────────────────────
-*.sql
-*.dump
-*.sqlite3
-C:\Users\hp\meterflow\.env
+# # ── Database dumps ────────────────────────────────────────────────────────────
+# *.sql
+# *.dump
+# *.sqlite3
+# C:\Users\hp\meterflow\.env
 
 
 .env

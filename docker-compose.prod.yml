@@ -1,0 +1,217 @@
+# docker-compose.prod.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Production Docker Compose
+#
+# Differences from docker-compose.yml (dev):
+#   - No exposed ports for DBs (internal network only)
+#   - Nginx reverse proxy with rate limiting
+#   - Resource limits (CPU, memory)
+#   - Restart policies (always restart on crash)
+#   - Celery worker + beat as separate services
+#   - Health checks on all services
+#   - Named volumes for persistence
+#   - No Redis Commander (dev tool, not for prod)
+#
+# USAGE:
+#   docker-compose -f docker-compose.prod.yml up -d
+#
+# PREREQUISITES:
+#   - .env file with all production values set
+#   - SSL certificate in ./nginx/ssl/ (or use certbot)
+#   - docker network create meterflow_network
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+# All services communicate on this internal network
+# Databases are NOT exposed to the host machine
+networks:
+  meterflow_internal:
+    driver: bridge
+
+services:
+
+  # ── Nginx (Reverse Proxy + SSL termination) ────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: mf_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro         # Mount your SSL certs here
+    depends_on:
+      - backend
+    networks:
+      - meterflow_internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # ── FastAPI Backend ────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: mf_backend
+    # No port exposure — Nginx handles external traffic
+    expose:
+      - "8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - meterflow_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1G
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Celery Worker (background tasks) ──────────────────────────────────────
+  celery_worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: mf_celery_worker
+    # Override the CMD from Dockerfile
+    command: ["celery", "-A", "config.celery_app", "worker",
+              "--loglevel=info", "--concurrency=4"]
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+      - postgres
+      - mongodb
+    networks:
+      - meterflow_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+  # ── Celery Beat (cron scheduler) ──────────────────────────────────────────
+  celery_beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: mf_celery_beat
+    command: ["celery", "-A", "config.celery_app", "beat",
+              "--loglevel=info", "--scheduler=celery.beat:PersistentScheduler"]
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - redis
+    networks:
+      - meterflow_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.25"
+          memory: 128M
+
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: mf_postgres
+    # No ports: section — DB not accessible from outside
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-meterflow_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}      # Must be set in .env
+      POSTGRES_DB: ${POSTGRES_DB:-meterflow_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - meterflow_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-meterflow_user}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MongoDB ────────────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: mf_mongodb
+    # No ports: section
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-meterflow}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - meterflow_internal
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: mf_redis
+    # No ports: section
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    networks:
+      - meterflow_internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local
+  mongodb_data:
+    driver: local
+  redis_data:
+    driver: local
