@@ -1,0 +1,81 @@
+# docker-compose.yml
+# ─────────────────────────────────────────────────────────────────────────────
+# Local Development Environment
+# 
+# This spins up all 3 databases with one command:
+#   docker-compose up -d
+#
+# No need to install PostgreSQL, MongoDB, or Redis manually!
+# Docker runs them in isolated containers.
+#
+# Real-world: Every modern dev team uses Docker for local development
+# to ensure everyone has identical environments ("works on my machine" problem)
+# ─────────────────────────────────────────────────────────────────────────────
+
+version: "3.9"
+
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine          # Lightweight Alpine Linux image
+    container_name: meterflow_postgres
+    environment:
+      POSTGRES_USER: meterflow_user
+      POSTGRES_PASSWORD: your_password   # Change this!
+      POSTGRES_DB: meterflow_db
+    ports:
+      - "5432:5432"                    # host:container port mapping
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # Persist data across restarts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meterflow_user -d meterflow_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── MongoDB ─────────────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: meterflow_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: meterflow_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes    # Enable persistence
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis Commander (GUI for Redis) ──────────────────────────────────────────
+  # Optional: Visual UI to inspect Redis data at http://localhost:8081
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: meterflow_redis_ui
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+
+# ── Named Volumes (persists data even after containers stop) ──────────────────
+volumes:
+  postgres_data:
+  mongodb_data:
+  redis_data:
