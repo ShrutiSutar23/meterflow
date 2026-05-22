@@ -24,7 +24,7 @@ import os
 import sys
 
 # Add the current directory to the system path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Your existing imports continue below...
 
