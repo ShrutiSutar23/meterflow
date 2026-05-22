@@ -29,7 +29,6 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # Your existing imports continue below...
 
 
-
 from backend.config.database import connect_db, disconnect_db
 from backend.routes.auth_routes import router as auth_router
 from backend.routes.password_routes import router as password_router
