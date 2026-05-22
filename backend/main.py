@@ -160,4 +160,17 @@ async def root():
         "total_endpoints": 35,
     }
 
+# Iske upar aapke saare routes aur middleware hain...
+
+@app.get("/", tags=["⚙️  System"])
+async def root():
+    return {
+        "service": "MeterFlow",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
+        "total_endpoints": 35,
+    }
+
+# Ensure explicit naming at the global level
 app = app
