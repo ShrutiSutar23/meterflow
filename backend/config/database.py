@@ -27,13 +27,25 @@ from backend.config.settings import settings
 
 # The "engine" is the actual connection to PostgreSQL
 # async = non-blocking (doesn't freeze the server while waiting for DB)
+# pg_engine = create_async_engine(
+#     settings.POSTGRES_URL,
+#     echo=settings.DEBUG,        # Print SQL queries when DEBUG=True (helpful!)
+#     pool_size=10,               # Keep 10 connections ready (connection pooling)
+#     max_overflow=20,            # Allow 20 extra connections in heavy traffic
+#     pool_pre_ping=True,         # Check connection health before using it
+# )
+
 pg_engine = create_async_engine(
     settings.POSTGRES_URL,
-    echo=settings.DEBUG,        # Print SQL queries when DEBUG=True (helpful!)
-    pool_size=10,               # Keep 10 connections ready (connection pooling)
-    max_overflow=20,            # Allow 20 extra connections in heavy traffic
-    pool_pre_ping=True,         # Check connection health before using it
+    echo=settings.DEBUG,
+    pool_size=10,
+    max_overflow=20,
+    pool_pre_ping=True,
+    connect_args={
+        "ssl": "require"
+    }
 )
+
 
 # Session factory - creates DB sessions (like opening a drawer to work with files)
 AsyncSessionLocal = async_sessionmaker(
