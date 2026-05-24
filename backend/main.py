@@ -62,6 +62,7 @@ async def lifespan(app: FastAPI):
     from backend.config.database import mongo_db
     if mongo_db is not None:
         from backend.services.logging_service import ensure_indexes
+        print("MONGODB_URL =", settings.MONGODB_URL)
         await ensure_indexes(mongo_db)
 
     import logging
