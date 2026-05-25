@@ -16,11 +16,11 @@ class Settings(BaseSettings):
     )
 
     # ── MongoDB ───────────────────────────────────────────────────────────────
-    MONGODB_URL: str = "mongodb://localhost:27017"
+    MONGODB_URL: str
     MONGODB_DB_NAME: str = "meterflow_logs"
 
     # ── Redis ─────────────────────────────────────────────────────────────────
-    REDIS_URL: str = "redis://localhost:6379"
+    REDIS_URL: str
 
     # ── JWT Authentication ────────────────────────────────────────────────────
     JWT_SECRET_KEY: str = (
