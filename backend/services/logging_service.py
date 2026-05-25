@@ -31,47 +31,91 @@ from motor.motor_asyncio import AsyncIOMotorDatabase
 from backend.models.log_model import LOGS_COLLECTION
 
 
+# async def ensure_indexes(db: AsyncIOMotorDatabase) -> None:
+#     """
+#     Create MongoDB indexes for optimal query performance.
+#     Call this once on startup.
+
+#     Without indexes, MongoDB does a full collection scan (slow!).
+#     With indexes, it jumps directly to matching documents (fast!).
+
+#     Real-world: Missing MongoDB indexes are a very common cause
+#     of production performance issues.
+#     """
+#     collection = db[LOGS_COLLECTION]
+
+#     # Compound index: most common query is "logs for user X in time range"
+#     await collection.create_index(
+#         [("user_id", 1), ("timestamp", -1)],
+#         name="idx_user_timestamp",
+#     )
+#     # Index for API key lookups
+#     await collection.create_index(
+#         [("api_key_id", 1), ("timestamp", -1)],
+#         name="idx_apikey_timestamp",
+#     )
+#     # Index for billing aggregations by month
+#     await collection.create_index(
+#         [("user_id", 1), ("billing_month", 1)],
+#         name="idx_user_billing_month",
+#     )
+#     # Index for status code filtering (error analysis)
+#     await collection.create_index("status_code", name="idx_status_code")
+
+#     # TTL Index: Auto-delete logs older than 90 days
+#     # MongoDB's TTL feature deletes documents automatically!
+#     # Real-world: GDPR/compliance often requires data retention limits.
+#     await collection.create_index(
+#         "timestamp",
+#         name="idx_ttl_90days",
+#         expireAfterSeconds=90 * 24 * 3600,  # 90 days in seconds
+#     )
+
+#     print("✅ MongoDB indexes created")
+
 async def ensure_indexes(db: AsyncIOMotorDatabase) -> None:
     """
-    Create MongoDB indexes for optimal query performance.
-    Call this once on startup.
+    TEMPORARY FIX:
+    Skip MongoDB index creation because Railway free MongoDB
+    is throwing OutOfDiskSpace during startup.
 
-    Without indexes, MongoDB does a full collection scan (slow!).
-    With indexes, it jumps directly to matching documents (fast!).
-
-    Real-world: Missing MongoDB indexes are a very common cause
-    of production performance issues.
+    Re-enable indexes later after moving to stable MongoDB.
     """
-    collection = db[LOGS_COLLECTION]
 
-    # Compound index: most common query is "logs for user X in time range"
-    await collection.create_index(
-        [("user_id", 1), ("timestamp", -1)],
-        name="idx_user_timestamp",
-    )
-    # Index for API key lookups
-    await collection.create_index(
-        [("api_key_id", 1), ("timestamp", -1)],
-        name="idx_apikey_timestamp",
-    )
-    # Index for billing aggregations by month
-    await collection.create_index(
-        [("user_id", 1), ("billing_month", 1)],
-        name="idx_user_billing_month",
-    )
-    # Index for status code filtering (error analysis)
-    await collection.create_index("status_code", name="idx_status_code")
+    # ─────────────────────────────────────────────────────────────
+    # OLD INDEX CREATION CODE (TEMPORARILY DISABLED)
+    # ─────────────────────────────────────────────────────────────
 
-    # TTL Index: Auto-delete logs older than 90 days
-    # MongoDB's TTL feature deletes documents automatically!
-    # Real-world: GDPR/compliance often requires data retention limits.
-    await collection.create_index(
-        "timestamp",
-        name="idx_ttl_90days",
-        expireAfterSeconds=90 * 24 * 3600,  # 90 days in seconds
-    )
+    # collection = db[LOGS_COLLECTION]
 
-    print("✅ MongoDB indexes created")
+    # await collection.create_index(
+    #     [("user_id", 1), ("timestamp", -1)],
+    #     name="idx_user_timestamp",
+    # )
+
+    # await collection.create_index(
+    #     [("api_key_id", 1), ("timestamp", -1)],
+    #     name="idx_apikey_timestamp",
+    # )
+
+    # await collection.create_index(
+    #     [("user_id", 1), ("billing_month", 1)],
+    #     name="idx_user_billing_month",
+    # )
+
+    # await collection.create_index(
+    #     "status_code",
+    #     name="idx_status_code",
+    # )
+
+    # await collection.create_index(
+    #     "timestamp",
+    #     name="idx_ttl_90days",
+    #     expireAfterSeconds=90 * 24 * 3600,
+    # )
+
+    print("⚠️ MongoDB index creation temporarily skipped")
+    return
 
 
 async def get_user_logs(
