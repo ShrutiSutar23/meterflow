@@ -95,7 +95,7 @@ A production-grade API billing backend with:
 # ── Middleware ────────────────────────────────────────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "https://meterflow-hn66.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
